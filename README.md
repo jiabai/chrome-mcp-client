@@ -14,6 +14,47 @@ A Chrome DevTools MCP client using the `mcp-use` TypeScript package.
 - Node.js >= 18.0.0
 - Chrome browser installed on your system
 
+### Required: start Chrome on port 9222
+
+Before running the project, you must start Chrome with remote debugging enabled on port `9222` using the provided PowerShell script:
+
+```powershell
+# In project root (Windows PowerShell)
+./scripts/Start-Chrome-9222.ps1
+```
+
+If your system blocks script execution, run with execution policy bypass:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/Start-Chrome-9222.ps1
+```
+
+Verification (optional): open the following URL in your browser and ensure it returns JSON with `WebSocketDebuggerUrl`:
+
+```
+http://127.0.0.1:9222/json/version
+```
+
+Notes:
+- The default debug port is `9222`. Keep this port free; the client expects `http://127.0.0.1:9222`.
+- The script launches an independent Chrome profile (`--user-data-dir`) and won’t affect your normal Chrome profile.
+- If the port is occupied, close other processes using `9222` rather than changing the port.
+
+### Startup Flow
+
+```mermaid
+flowchart TD
+  A[Run Start-Chrome-9222.ps1] --> B{Chrome started?}
+  B -- Yes --> C[Open http://127.0.0.1:9222/json/version]
+  C --> D{Has WebSocketDebuggerUrl?}
+  D -- Yes --> E[Run npm run dev / npm start]
+  B -- No --> F[Check Chrome path/permissions/port 9222]
+  D -- No --> G[Free 9222 and rerun script]
+
+  classDef node fill:#1f2937,stroke:#9ca3af,color:#ffffff,stroke-width:1px;
+  class A,B,C,D,E,F,G node;
+```
+
 ## Installation
 
 ```bash
