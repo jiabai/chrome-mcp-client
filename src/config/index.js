@@ -1,0 +1,1 @@
+export { configureMCP } from './mcp.js';

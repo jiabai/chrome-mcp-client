@@ -1,0 +1,17 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "node": "18"
+        },
+        "useBuiltIns": "usage",
+        "corejs": "3.30"
+      }
+    ]
+  ],
+  "plugins": [
+    "@babel/plugin-transform-optional-chaining"
+  ]
+}
