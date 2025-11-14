@@ -6,6 +6,8 @@ import { configureMCP } from './config/mcp.js';
 import { logger } from './utils/logger.js';
 import { runWithTimeout } from './utils/timeout.js';
 import { withLogFilter } from './utils/logFilter.js';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 // Constants for timeout configuration
 // 超时配置常量
@@ -87,20 +89,50 @@ async function runAgentTask(agent, task) {
  */
 function parseArguments() {
     const args = process.argv.slice(2);
+    const fileArgIndex = args.findIndex(a => a === '--file');
+    let filePath = process.env.TASK_FILE || '';
+
+    if (fileArgIndex !== -1 && args[fileArgIndex + 1]) {
+        filePath = args[fileArgIndex + 1];
+    } else {
+        const inlineEq = args.find(a => a.startsWith('--file='));
+        if (inlineEq) {
+            filePath = inlineEq.split('=')[1];
+        } else if (args.length === 1 && /\.(json|txt)$/i.test(args[0])) {
+            filePath = args[0];
+        }
+    }
+
+    if (filePath) {
+        const absPath = resolve(filePath);
+        const content = readFileSync(absPath, 'utf-8');
+        if (/\.json$/i.test(absPath)) {
+            const data = JSON.parse(content);
+            if (!data || typeof data.task !== 'string' || !data.task.trim()) {
+                throw new Error('任务文件无效：必须包含非空字符串字段 task');
+            }
+            return data.task.trim();
+        }
+        if (/\.txt$/i.test(absPath)) {
+            const task = content.trim();
+            if (!task) {
+                throw new Error('任务文件为空：请在文本中填写任务指令');
+            }
+            return task;
+        }
+        throw new Error('不支持的任务文件类型：仅支持 .json 或 .txt');
+    }
+
     const task = args.join(' ').trim();
-    
     if (!task) {
-        // If no arguments provided, show usage information
-        // 如果没有提供参数，显示使用说明
         const scriptPath = process.argv[1];
         const isProduction = scriptPath.includes('dist');
         const scriptName = isProduction ? 'npm start' : 'npm run dev';
-        
         console.log(`Usage: ${scriptName} -- "<task instruction>"`);
+        console.log(`Or:    ${scriptName} -- --file tasks/task.json`);
         console.log(`Example: ${scriptName} -- "Please navigate to https://www.example.com"`);
         process.exit(1);
     }
-    
     return task;
 }
 
